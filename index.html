@@ -1,251 +1,107 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resume Builder — Digital Heroes</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professional Resume Builder</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
+
 <body>
 
-  <!-- Top Bar -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <span class="logo-mark">R/B</span>
-      <span class="logo-text">Resume Builder</span>
-    </div>
-    <div class="topbar-right">
-      <button class="btn-hero" onclick="window.open('https://digitalheroesco.com','_blank')">
-        <span class="hero-dot"></span>
-        Built for Digital Heroes
-      </button>
-      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
-        <span class="theme-icon" id="themeIcon">☀️</span>
-      </button>
-    </div>
-  </header>
+<header>
+<h1>Resume Builder</h1>
 
-  <!-- Main Layout -->
-  <main class="workspace">
+<div class="header-buttons">
+<button id="themeToggle">🌙 Theme</button>
 
-    <!-- LEFT: Form Panel -->
-    <aside class="form-panel" id="formPanel">
-      <div class="panel-header">
-        <h2>Your Details</h2>
-        <p>Fill in the fields — your resume updates live.</p>
-      </div>
+<button onclick="window.open('https://digitalheroesco.com','_blank')">
+Built for Digital Heroes
+</button>
+</div>
+</header>
 
-      <!-- Photo + Identity -->
-      <section class="card" id="card-identity">
-        <div class="card-label">Identity</div>
+<div class="container">
 
-        <div class="photo-upload-area" id="photoUploadArea" onclick="document.getElementById('photoInput').click()">
-          <img src="" alt="Profile" id="photoPreview" class="photo-preview hidden" />
-          <div class="photo-placeholder" id="photoPlaceholder">
-            <div class="photo-icon">👤</div>
-            <span>Upload Photo</span>
-          </div>
-          <input type="file" id="photoInput" accept="image/*" hidden />
-        </div>
+<div class="form-card">
 
-        <div class="field-group">
-          <label for="fullName">Full Name</label>
-          <input type="text" id="fullName" placeholder="e.g. Rohit Singh Chauhan" autocomplete="name" />
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label for="email">Email <span class="required">*</span></label>
-            <input type="email" id="email" placeholder="your@email.com" />
-            <span class="field-error" id="emailError"></span>
-          </div>
-          <div class="field-group">
-            <label for="phone">Phone <span class="required">*</span></label>
-            <input type="tel" id="phone" placeholder="+91 98765 43210" />
-            <span class="field-error" id="phoneError"></span>
-          </div>
-        </div>
-        <div class="field-group">
-          <label for="address">Address</label>
-          <input type="text" id="address" placeholder="City, State, Country" />
-        </div>
-        <div class="field-row">
-          <div class="field-group">
-            <label for="linkedin">LinkedIn</label>
-            <input type="text" id="linkedin" placeholder="linkedin.com/in/yourname" />
-          </div>
-          <div class="field-group">
-            <label for="website">Portfolio / Website</label>
-            <input type="text" id="website" placeholder="yoursite.com" />
-          </div>
-        </div>
-      </section>
+<h2>Resume Information</h2>
 
-      <!-- Objective -->
-      <section class="card" id="card-objective">
-        <div class="card-label">Career Objective</div>
-        <div class="field-group">
-          <textarea id="objective" rows="4" placeholder="Write a compelling 2–3 sentence summary of who you are, what you bring, and where you're headed…"></textarea>
-        </div>
-      </section>
+<input type="file" id="photo">
 
-      <!-- Skills -->
-      <section class="card" id="card-skills">
-        <div class="card-label">Skills</div>
-        <div class="field-group">
-          <label for="skills">Skills <small>(comma-separated)</small></label>
-          <input type="text" id="skills" placeholder="JavaScript, React, Node.js, Python, Git…" />
-        </div>
-      </section>
+<input type="text" id="name" placeholder="Full Name">
+<input type="email" id="email" placeholder="Email">
+<input type="text" id="phone" placeholder="Phone Number">
+<input type="text" id="address" placeholder="Address">
 
-      <!-- Education -->
-      <section class="card" id="card-education">
-        <div class="card-label">Education</div>
-        <div id="educationList"></div>
-        <button class="add-btn" onclick="addEntry('education')">+ Add Education</button>
-      </section>
+<textarea id="objective" placeholder="Career Objective"></textarea>
+<textarea id="skills" placeholder="Skills"></textarea>
+<textarea id="education" placeholder="Education"></textarea>
+<textarea id="experience" placeholder="Work Experience"></textarea>
+<textarea id="projects" placeholder="Projects"></textarea>
+<textarea id="certifications" placeholder="Certifications"></textarea>
+<textarea id="languages" placeholder="Languages"></textarea>
 
-      <!-- Experience -->
-      <section class="card" id="card-experience">
-        <div class="card-label">Work Experience</div>
-        <div id="experienceList"></div>
-        <button class="add-btn" onclick="addEntry('experience')">+ Add Experience</button>
-      </section>
+<div class="btn-group">
+<button id="downloadBtn">Download PDF</button>
+<button id="clearBtn">Clear Form</button>
+</div>
 
-      <!-- Projects -->
-      <section class="card" id="card-projects">
-        <div class="card-label">Projects</div>
-        <div id="projectsList"></div>
-        <button class="add-btn" onclick="addEntry('projects')">+ Add Project</button>
-      </section>
+</div>
 
-      <!-- Certifications -->
-      <section class="card" id="card-certifications">
-        <div class="card-label">Certifications</div>
-        <div id="certificationsList"></div>
-        <button class="add-btn" onclick="addEntry('certifications')">+ Add Certification</button>
-      </section>
+<div class="resume-card" id="resume">
 
-      <!-- Languages -->
-      <section class="card" id="card-languages">
-        <div class="card-label">Languages</div>
-        <div class="field-group">
-          <label for="languages">Languages <small>(comma-separated)</small></label>
-          <input type="text" id="languages" placeholder="English (Fluent), Hindi (Native)…" />
-        </div>
-      </section>
+<div class="resume-header">
+<img id="previewPhoto" src="" alt="">
+<h2 id="previewName">Rohit Singh Chauhan</h2>
+<p id="previewEmail">your-email@gmail.com</p>
+<p id="previewPhone"></p>
+<p id="previewAddress"></p>
+</div>
 
-      <!-- Actions -->
-      <div class="form-actions">
-        <button class="btn-primary" id="downloadBtn" onclick="downloadPDF()">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Download PDF
-        </button>
-        <button class="btn-secondary" onclick="clearForm()">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-          </svg>
-          Clear Form
-        </button>
-      </div>
-    </aside>
+<div class="section">
+<h3>Career Objective</h3>
+<p id="previewObjective"></p>
+</div>
 
-    <!-- RIGHT: Live Preview -->
-    <section class="preview-panel">
-      <div class="preview-toolbar">
-        <span class="preview-label">Live Preview</span>
-        <span class="preview-hint">Updates as you type</span>
-      </div>
-      <div class="preview-wrapper">
-        <div class="resume-sheet" id="resumeSheet">
+<div class="section">
+<h3>Skills</h3>
+<p id="previewSkills"></p>
+</div>
 
-          <!-- Resume Header -->
-          <div class="resume-header">
-            <div class="resume-identity">
-              <img src="" alt="Photo" id="previewPhoto" class="resume-photo hidden" />
-              <div class="resume-name-block">
-                <h1 id="previewName">Rohit Singh Chauhan</h1>
-                <div class="resume-contact-row" id="previewContact">
-                  <span id="previewEmail">your-email@gmail.com</span>
-                </div>
-              </div>
-            </div>
-          </div>
+<div class="section">
+<h3>Education</h3>
+<p id="previewEducation"></p>
+</div>
 
-          <!-- Objective -->
-          <div class="resume-section" id="previewObjectiveSection">
-            <div class="resume-section-title">About</div>
-            <p id="previewObjective" class="resume-objective"></p>
-          </div>
+<div class="section">
+<h3>Experience</h3>
+<p id="previewExperience"></p>
+</div>
 
-          <!-- Skills -->
-          <div class="resume-section" id="previewSkillsSection">
-            <div class="resume-section-title">Skills</div>
-            <div class="skills-grid" id="previewSkills"></div>
-          </div>
+<div class="section">
+<h3>Projects</h3>
+<p id="previewProjects"></p>
+</div>
 
-          <!-- Experience -->
-          <div class="resume-section" id="previewExperienceSection">
-            <div class="resume-section-title">Work Experience</div>
-            <div id="previewExperience"></div>
-          </div>
+<div class="section">
+<h3>Certifications</h3>
+<p id="previewCertifications"></p>
+</div>
 
-          <!-- Education -->
-          <div class="resume-section" id="previewEducationSection">
-            <div class="resume-section-title">Education</div>
-            <div id="previewEducation"></div>
-          </div>
+<div class="section">
+<h3>Languages</h3>
+<p id="previewLanguages"></p>
+</div>
 
-          <!-- Projects -->
-          <div class="resume-section" id="previewProjectsSection">
-            <div class="resume-section-title">Projects</div>
-            <div id="previewProjects"></div>
-          </div>
+</div>
 
-          <!-- Certifications -->
-          <div class="resume-section" id="previewCertificationsSection">
-            <div class="resume-section-title">Certifications</div>
-            <div id="previewCertifications"></div>
-          </div>
+</div>
 
-          <!-- Languages -->
-          <div class="resume-section" id="previewLanguagesSection">
-            <div class="resume-section-title">Languages</div>
-            <div class="lang-list" id="previewLanguages"></div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Entry Modal -->
-  <div class="modal-overlay hidden" id="modalOverlay">
-    <div class="modal" id="modal">
-      <div class="modal-header">
-        <h3 id="modalTitle">Add Entry</h3>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-      <div class="modal-body" id="modalBody"></div>
-      <div class="modal-footer">
-        <button class="btn-primary" onclick="saveEntry()">Save Entry</button>
-        <button class="btn-secondary" onclick="closeModal()">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div class="toast" id="toast"></div>
-
-  <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
