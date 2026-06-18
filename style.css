@@ -1,0 +1,464 @@
+/* ============================================
+   RESUME BUILDER — script.js
+   ============================================ */
+
+// ── State ──────────────────────────────────────────────────────────────────
+const STATE_KEY = 'resumeBuilder_v1';
+let state = {
+  photo: '',
+  fullName: 'Rohit Singh Chauhan',
+  email: 'your-email@gmail.com',
+  phone: '',
+  address: '',
+  linkedin: '',
+  website: '',
+  objective: '',
+  skills: '',
+  languages: '',
+  education: [],
+  experience: [],
+  projects: [],
+  certifications: [],
+};
+
+let currentSection   = null;
+let currentEditIndex = null;
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  populateForm();
+  renderPreview();
+  attachListeners();
+  initTheme();
+});
+
+// ── Persistence ────────────────────────────────────────────────────────────
+function saveState() {
+  try { localStorage.setItem(STATE_KEY, JSON.stringify(state)); } catch(_) {}
+}
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STATE_KEY);
+    if (saved) state = { ...state, ...JSON.parse(saved) };
+  } catch(_) {}
+}
+
+// ── Populate form from state ───────────────────────────────────────────────
+function populateForm() {
+  const fields = ['fullName','email','phone','address','linkedin','website','objective','skills','languages'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = state[id] || '';
+  });
+  if (state.photo) showPhotoPreview(state.photo);
+  renderAllEntryLists();
+}
+
+// ── Attach real-time listeners ─────────────────────────────────────────────
+function attachListeners() {
+  const fields = ['fullName','email','phone','address','linkedin','website','objective','skills','languages'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      state[id] = el.value;
+      if (id === 'email') validateEmail();
+      if (id === 'phone') validatePhone();
+      saveState();
+      renderPreview();
+    });
+  });
+
+  // Photo
+  document.getElementById('photoInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      state.photo = ev.target.result;
+      showPhotoPreview(state.photo);
+      saveState();
+      renderPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Theme
+  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+}
+
+// ── Validation ─────────────────────────────────────────────────────────────
+function validateEmail() {
+  const val   = state.email.trim();
+  const errEl = document.getElementById('emailError');
+  const inp   = document.getElementById('email');
+  const ok    = !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  errEl.textContent = ok ? '' : 'Enter a valid email address.';
+  inp.classList.toggle('error', !ok);
+  return ok;
+}
+function validatePhone() {
+  const val   = state.phone.trim();
+  const errEl = document.getElementById('phoneError');
+  const inp   = document.getElementById('phone');
+  const ok    = !val || /^[\d\s\+\-\(\)]{7,15}$/.test(val);
+  errEl.textContent = ok ? '' : 'Enter a valid phone number.';
+  inp.classList.toggle('error', !ok);
+  return ok;
+}
+
+// ── Photo ──────────────────────────────────────────────────────────────────
+function showPhotoPreview(src) {
+  const preview = document.getElementById('photoPreview');
+  const placeholder = document.getElementById('photoPlaceholder');
+  preview.src = src;
+  preview.classList.remove('hidden');
+  placeholder.classList.add('hidden');
+}
+
+// ── Theme ──────────────────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+}
+function toggleTheme() {
+  const cur  = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateThemeIcon(next);
+}
+function updateThemeIcon(theme) {
+  document.getElementById('themeIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+}
+
+// ── Entry Lists (in form) ──────────────────────────────────────────────────
+const SECTION_CONFIG = {
+  education:      { title: 'Add Education',      fields: eduFields },
+  experience:     { title: 'Add Experience',      fields: expFields },
+  projects:       { title: 'Add Project',         fields: projFields },
+  certifications: { title: 'Add Certification',   fields: certFields },
+};
+
+function renderAllEntryLists() {
+  ['education','experience','projects','certifications'].forEach(renderEntryList);
+}
+
+function renderEntryList(section) {
+  const container = document.getElementById(`${section}List`);
+  if (!container) return;
+  container.innerHTML = '';
+  (state[section] || []).forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = 'entry-item';
+    div.innerHTML = `
+      <div class="entry-item-text">
+        <strong>${escHtml(item.title || item.degree || item.name || item.certName || '—')}</strong>
+        <span>${escHtml(item.org || item.school || item.company || item.issuer || '')}${item.year || item.duration ? ` · ${item.year || item.duration}` : ''}</span>
+      </div>
+      <div class="entry-item-actions">
+        <button class="icon-btn" title="Edit" onclick="editEntry('${section}',${idx})">✏️</button>
+        <button class="icon-btn delete" title="Delete" onclick="deleteEntry('${section}',${idx})">🗑</button>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function addEntry(section) {
+  currentSection   = section;
+  currentEditIndex = null;
+  openModal(section, null);
+}
+
+function editEntry(section, idx) {
+  currentSection   = section;
+  currentEditIndex = idx;
+  openModal(section, state[section][idx]);
+}
+
+function deleteEntry(section, idx) {
+  state[section].splice(idx, 1);
+  saveState();
+  renderEntryList(section);
+  renderPreview();
+  showToast('Entry deleted.');
+}
+
+function openModal(section, data) {
+  const cfg = SECTION_CONFIG[section];
+  document.getElementById('modalTitle').textContent = data ? cfg.title.replace('Add','Edit') : cfg.title;
+  document.getElementById('modalBody').innerHTML = cfg.fields(data || {});
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modalOverlay')) return;
+  document.getElementById('modalOverlay').classList.add('hidden');
+  currentSection = null; currentEditIndex = null;
+}
+
+function saveEntry() {
+  if (!currentSection) return;
+  const body   = document.getElementById('modalBody');
+  const inputs = body.querySelectorAll('input, textarea');
+  const entry  = {};
+  inputs.forEach(inp => { entry[inp.name] = inp.value.trim(); });
+
+  if (currentEditIndex !== null) {
+    state[currentSection][currentEditIndex] = entry;
+  } else {
+    state[currentSection].push(entry);
+  }
+  saveState();
+  renderEntryList(currentSection);
+  renderPreview();
+  document.getElementById('modalOverlay').classList.add('hidden');
+  currentSection = null; currentEditIndex = null;
+  showToast('Saved successfully!');
+}
+
+// ── Field templates ────────────────────────────────────────────────────────
+function eduFields(d) {
+  return `
+    ${mf('Degree / Qualification','degree',d.degree)}
+    ${mf('School / Institution','school',d.school)}
+    ${mf('Year / Duration','year',d.year,'e.g. 2018 – 2022')}
+    ${mf('Grade / CGPA (optional)','grade',d.grade,'e.g. 8.5 / 10')}`;
+}
+function expFields(d) {
+  return `
+    ${mf('Job Title','title',d.title)}
+    ${mf('Company / Organisation','company',d.company)}
+    ${mf('Duration','duration',d.duration,'e.g. Jan 2021 – Present')}
+    ${mt('Key Responsibilities / Achievements','desc',d.desc)}`;
+}
+function projFields(d) {
+  return `
+    ${mf('Project Name','name',d.name)}
+    ${mf('Tech Stack / Role','org',d.org,'e.g. React, Node.js')}
+    ${mf('Year / Duration','year',d.year,'e.g. 2023')}
+    ${mt('Description / Impact','desc',d.desc)}
+    ${mf('Link (optional)','link',d.link,'https://github.com/…')}`;
+}
+function certFields(d) {
+  return `
+    ${mf('Certification Name','certName',d.certName)}
+    ${mf('Issuing Authority','issuer',d.issuer,'e.g. Coursera, AWS')}
+    ${mf('Year','year',d.year,'e.g. 2023')}`;
+}
+
+function mf(label, name, val='', placeholder='') {
+  return `<div class="field-group">
+    <label>${escHtml(label)}</label>
+    <input type="text" name="${name}" value="${escHtml(val)}" placeholder="${escHtml(placeholder)}" />
+  </div>`;
+}
+function mt(label, name, val='') {
+  return `<div class="field-group">
+    <label>${escHtml(label)}</label>
+    <textarea name="${name}" rows="3">${escHtml(val)}</textarea>
+  </div>`;
+}
+
+// ── Preview Render ─────────────────────────────────────────────────────────
+function renderPreview() {
+  // Name
+  setText('previewName', state.fullName || 'Your Name');
+
+  // Contact row
+  const contactParts = [state.email, state.phone, state.address, state.linkedin, state.website]
+    .filter(Boolean)
+    .map(v => `<span>${escHtml(v)}</span>`).join('');
+  document.getElementById('previewContact').innerHTML = contactParts ||
+    `<span>your-email@gmail.com</span>`;
+
+  // Photo
+  const previewPhoto = document.getElementById('previewPhoto');
+  if (state.photo) {
+    previewPhoto.src = state.photo;
+    previewPhoto.classList.remove('hidden');
+  } else {
+    previewPhoto.classList.add('hidden');
+  }
+
+  // Objective
+  const objSection = document.getElementById('previewObjectiveSection');
+  const objText    = state.objective.trim();
+  objSection.style.display = objText ? '' : 'none';
+  setText('previewObjective', objText);
+
+  // Skills
+  const skillsSection = document.getElementById('previewSkillsSection');
+  const skillsRaw     = state.skills.trim();
+  if (skillsRaw) {
+    const tags = skillsRaw.split(',').map(s => s.trim()).filter(Boolean)
+      .map(s => `<span class="skill-tag">${escHtml(s)}</span>`).join('');
+    document.getElementById('previewSkills').innerHTML = tags;
+    skillsSection.style.display = '';
+  } else {
+    skillsSection.style.display = 'none';
+  }
+
+  // Languages
+  const langsSection = document.getElementById('previewLanguagesSection');
+  const langsRaw     = state.languages.trim();
+  if (langsRaw) {
+    const tags = langsRaw.split(',').map(s => s.trim()).filter(Boolean)
+      .map(s => `<span class="lang-tag">${escHtml(s)}</span>`).join('');
+    document.getElementById('previewLanguages').innerHTML = tags;
+    langsSection.style.display = '';
+  } else {
+    langsSection.style.display = 'none';
+  }
+
+  // Education
+  renderSectionEntries('previewEducationSection', 'previewEducation', state.education, renderEduEntry);
+  // Experience
+  renderSectionEntries('previewExperienceSection', 'previewExperience', state.experience, renderExpEntry);
+  // Projects
+  renderSectionEntries('previewProjectsSection', 'previewProjects', state.projects, renderProjEntry);
+  // Certifications
+  renderSectionEntries('previewCertificationsSection', 'previewCertifications', state.certifications, renderCertEntry);
+}
+
+function renderSectionEntries(sectionId, containerId, items, fn) {
+  const section   = document.getElementById(sectionId);
+  const container = document.getElementById(containerId);
+  if (!items || !items.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  container.innerHTML = items.map(fn).join('');
+}
+
+function renderEduEntry(item) {
+  return `<div class="resume-entry">
+    <div class="entry-top">
+      <div>
+        <div class="entry-main-title">${escHtml(item.degree || '')}</div>
+        <div class="entry-sub">${escHtml(item.school || '')}</div>
+      </div>
+      <div class="entry-date">${escHtml(item.year || '')}</div>
+    </div>
+    ${item.grade ? `<div class="entry-desc">Grade: ${escHtml(item.grade)}</div>` : ''}
+  </div>`;
+}
+function renderExpEntry(item) {
+  return `<div class="resume-entry">
+    <div class="entry-top">
+      <div>
+        <div class="entry-main-title">${escHtml(item.title || '')}</div>
+        <div class="entry-sub">${escHtml(item.company || '')}</div>
+      </div>
+      <div class="entry-date">${escHtml(item.duration || '')}</div>
+    </div>
+    ${item.desc ? `<div class="entry-desc">${escHtml(item.desc)}</div>` : ''}
+  </div>`;
+}
+function renderProjEntry(item) {
+  return `<div class="resume-entry">
+    <div class="entry-top">
+      <div>
+        <div class="entry-main-title">${escHtml(item.name || '')}</div>
+        <div class="entry-sub">${escHtml(item.org || '')}</div>
+      </div>
+      <div class="entry-date">${escHtml(item.year || '')}</div>
+    </div>
+    ${item.desc ? `<div class="entry-desc">${escHtml(item.desc)}</div>` : ''}
+    ${item.link ? `<div class="entry-link">🔗 ${escHtml(item.link)}</div>` : ''}
+  </div>`;
+}
+function renderCertEntry(item) {
+  return `<div class="resume-entry">
+    <div class="entry-top">
+      <div>
+        <div class="entry-main-title">${escHtml(item.certName || '')}</div>
+        <div class="entry-sub">${escHtml(item.issuer || '')}</div>
+      </div>
+      <div class="entry-date">${escHtml(item.year || '')}</div>
+    </div>
+  </div>`;
+}
+
+// ── Clear Form ─────────────────────────────────────────────────────────────
+function clearForm() {
+  if (!confirm('Clear all data? This cannot be undone.')) return;
+  state = {
+    photo:'', fullName:'Rohit Singh Chauhan', email:'your-email@gmail.com',
+    phone:'', address:'', linkedin:'', website:'', objective:'',
+    skills:'', languages:'',
+    education:[], experience:[], projects:[], certifications:[]
+  };
+  saveState();
+  populateForm();
+  renderPreview();
+
+  // Reset photo UI
+  document.getElementById('photoPreview').classList.add('hidden');
+  document.getElementById('photoPlaceholder').classList.remove('hidden');
+  document.getElementById('photoInput').value = '';
+
+  showToast('Form cleared.');
+}
+
+// ── PDF Download ───────────────────────────────────────────────────────────
+function downloadPDF() {
+  if (!validateEmail() || !validatePhone()) {
+    showToast('Fix validation errors before downloading.');
+    return;
+  }
+  const btn = document.getElementById('downloadBtn');
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+
+  const element = document.getElementById('resumeSheet');
+  const name = (state.fullName || 'Resume').replace(/\s+/g, '_');
+  const opt = {
+    margin:       [0, 0],
+    filename:     `${name}_Resume.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  html2pdf().set(opt).from(element).save()
+    .then(() => {
+      btn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF`;
+      btn.disabled = false;
+      showToast('PDF downloaded!');
+    })
+    .catch(() => {
+      btn.innerHTML = `Download PDF`;
+      btn.disabled = false;
+      showToast('PDF generation failed. Try again.');
+    });
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Close modal on overlay click
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('modalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal(e);
+  });
+});
